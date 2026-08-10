@@ -79,15 +79,6 @@ submit completed work and maintain daily work logs.
 6. Submission and Feedback
 7. Dashboard
 
-## Task Status
-
-Tasks use the following workflow:
-
-TODO → IN_PROGRESS → SUBMITTED → COMPLETED
-
-When changes are required:
-
-SUBMITTED → REVISION_REQUIRED → IN_PROGRESS → SUBMITTED
 
 ## User Roles
 
