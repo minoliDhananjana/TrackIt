@@ -18,9 +18,23 @@ export default function Login() {
   }, [loading]);
 
   const handleSubmit = async (event) => {
-    event.preventDefault(); setError(''); setLoading(true);
+    event.preventDefault();
+    const submittedForm = new FormData(event.currentTarget);
+    const credentials = {
+      email: String(submittedForm.get('email') || '').trim(),
+      password: String(submittedForm.get('password') || ''),
+    };
+
+    if (!credentials.email || !credentials.password) {
+      setError('Enter both your email address and password.');
+      return;
+    }
+
+    setFormData(credentials);
+    setError('');
+    setLoading(true);
     try {
-      const response = await api.post('/users/login', formData, { timeout: 30000 });
+      const response = await api.post('/users/login', credentials, { timeout: 30000 });
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data));
       navigate('/dashboard');
@@ -53,7 +67,7 @@ export default function Login() {
           <div className="login-brand mobile-brand"><img src={logo} alt="TrackIt" /></div>
           <h2>Welcome back</h2>
           <p>Sign in to continue to your workspace.</p>
-          <form onSubmit={handleSubmit} noValidate>
+          <form onSubmit={handleSubmit}>
             <div className="field"><label htmlFor="email">Email address</label><input id="email" type="email" name="email" value={formData.email} onChange={(e) => setFormData({...formData,email:e.target.value})} placeholder="name@company.com" autoComplete="email" required /></div>
             <div className="field"><div className="password-row"><label htmlFor="password">Password</label><button type="button" className="text-action" onClick={() => setShowPassword(!showPassword)}>{showPassword ? 'Hide' : 'Show'}</button></div><input id="password" type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={(e) => setFormData({...formData,password:e.target.value})} placeholder="Enter your password" autoComplete="current-password" required /></div>
             {error && <div className="login-error" role="alert">{error}</div>}

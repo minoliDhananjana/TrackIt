@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class DashboardService {
@@ -42,7 +43,7 @@ public class DashboardService {
 
         List<User> interns = supervisor ? userRepository.findByRole(Role.INTERN) : List.of(currentUser);
         long activeInterns = interns.stream()
-                .filter(User::isActive)
+                .filter(user -> user != null && user.isActive())
                 .count();
 
         List<Project> visibleProjects = supervisor ? projectRepository.findAll() : projectRepository.findByAssignedInternIdsContaining(currentUser.getId());
@@ -74,6 +75,7 @@ public class DashboardService {
 
         List<Submission> recentActivity =
                 (supervisor ? submissionRepository.findAll() : submissionRepository.findByInternId(currentUser.getId())).stream()
+                        .filter(Objects::nonNull)
                         .sorted(
                                 Comparator.comparing(
                                         Submission::getSubmittedAt,

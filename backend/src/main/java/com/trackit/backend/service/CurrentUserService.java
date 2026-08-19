@@ -20,7 +20,7 @@ public class CurrentUserService {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new IllegalStateException("Authenticated user is required");
         }
-        return userRepository.findByEmail(authentication.getName())
+        return userRepository.findByEmailIgnoreCase(authentication.getName())
                 .orElseThrow(() -> new IllegalStateException("Authenticated user no longer exists"));
     }
 

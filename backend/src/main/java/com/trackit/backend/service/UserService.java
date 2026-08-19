@@ -27,14 +27,16 @@ public class UserService {
     // Register user
     public String register(RegisterRequest request) {
 
-        if (userRepository.existsByEmail(request.getEmail())) {
+        String email = normalizeEmail(request.getEmail());
+
+        if (userRepository.existsByEmailIgnoreCase(email)) {
             return "Email already exists";
         }
 
         User user = new User();
 
-        user.setFullName(request.getFullName());
-        user.setEmail(request.getEmail());
+        user.setFullName(request.getFullName().trim());
+        user.setEmail(email);
         user.setPassword(
                 passwordEncoder.encode(request.getPassword())
         );
@@ -52,7 +54,7 @@ public class UserService {
     public User login(String email, String password) {
 
         User user = userRepository
-                .findByEmail(email)
+                .findByEmailIgnoreCase(normalizeEmail(email))
                 .orElse(null);
 
         if (user == null) {
@@ -71,6 +73,10 @@ public class UserService {
         }
 
         return user;
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null ? "" : email.trim().toLowerCase();
     }
 
     // Get all interns
@@ -101,8 +107,9 @@ public class UserService {
             return null;
         }
 
+        String email = normalizeEmail(updatedIntern.getEmail());
         User emailOwner = userRepository
-                .findByEmail(updatedIntern.getEmail())
+                .findByEmailIgnoreCase(email)
                 .orElse(null);
 
         if (emailOwner != null &&
@@ -122,9 +129,7 @@ public class UserService {
 
         existingIntern.setFullName(updatedIntern.getFullName().trim());
 
-        existingIntern.setEmail(
-                updatedIntern.getEmail().trim().toLowerCase()
-        );
+        existingIntern.setEmail(email);
 
         User savedIntern =
                 userRepository.save(existingIntern);

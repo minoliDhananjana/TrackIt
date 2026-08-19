@@ -79,14 +79,20 @@ public class SubmissionService {
             String comment,
             boolean approved
     ) {
-        if (!approved && (comment == null || comment.isBlank())) {
-            throw new IllegalArgumentException("A revision comment is required when requesting changes");
-        }
         Submission submission =
                 submissionRepository.findById(id).orElse(null);
 
         if (submission == null) {
             return null;
+        }
+        SubmissionStatus currentStatus = submission.getReviewStatus() != null
+                ? submission.getReviewStatus()
+                : (submission.isApproved() ? SubmissionStatus.APPROVED : SubmissionStatus.PENDING);
+        if (currentStatus != SubmissionStatus.PENDING) {
+            throw new IllegalArgumentException("This submission has already been reviewed");
+        }
+        if (!approved && (comment == null || comment.isBlank())) {
+            throw new IllegalArgumentException("A revision comment is required when requesting changes");
         }
 
         submission.setSupervisorComment(comment);

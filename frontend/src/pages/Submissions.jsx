@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import api from "../api/axios";
 import Layout from "../components/Layout";
 
@@ -11,7 +11,10 @@ const emptyForm = {
 };
 
 export default function Submissions() {
-  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const currentUser = useMemo(
+    () => JSON.parse(localStorage.getItem("user") || "{}"),
+    [],
+  );
   const isAdmin = ["ADMIN", "SUPERVISOR"].includes(currentUser.role);
   const [submissions, setSubmissions] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -22,7 +25,9 @@ export default function Submissions() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError("");
     try {
       const [
         submissionsResponse,
@@ -42,12 +47,12 @@ export default function Submissions() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUser, isAdmin]);
 
   useEffect(() => {
-    loadData();
+    void loadData();
     if (!isAdmin) setFormData((current) => ({ ...current, internId: currentUser.userId }));
-  }, []);
+  }, [currentUser.userId, isAdmin, loadData]);
 
   const handleChange = (event) => {
     setFormData({
@@ -66,7 +71,7 @@ export default function Submissions() {
 
       setMessage("Work submitted successfully");
       setFormData(isAdmin ? emptyForm : { ...emptyForm, internId: currentUser.userId });
-      loadData();
+      await loadData();
     } catch (requestError) {
       setError(
         requestError.response?.data?.message ||
@@ -104,9 +109,9 @@ export default function Submissions() {
           : "Revision requested successfully"
       );
 
-      loadData();
-    } catch {
-      setError("Unable to review submission");
+      await loadData();
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || "Unable to review submission");
     }
   };
 
@@ -155,7 +160,7 @@ export default function Submissions() {
               <option value="">Select task</option>
 
               {tasks
-                .filter((task) => task.status !== "COMPLETED")
+                .filter((task) => !["COMPLETED", "SUBMITTED"].includes(task.status))
                 .map((task) => (
                   <option key={task.id} value={task.id}>
                     {task.title}
@@ -279,7 +284,7 @@ export default function Submissions() {
                     </div>
                   )}
 
-                  {isAdmin && <div style={styles.reviewArea}>
+                  {isAdmin && getReviewStatus(submission) === "PENDING" && <div style={styles.reviewArea}>
                     <input
                       value={reviews[submission.id]?.comment || ""}
                       onChange={(event) =>

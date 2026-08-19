@@ -12,7 +12,20 @@ export default function Dashboard() {
   const isIntern = user.role === 'INTERN';
   const [dashboard, setDashboard] = useState({ activeInterns:0, activeProjects:0, pendingTasks:0, completedTasks:0, overdueTasks:0, recentActivity:[] });
   const [error, setError] = useState('');
-  useEffect(() => { api.get('/dashboard').then(({data}) => setDashboard(data)).catch(() => setError('Dashboard data is temporarily unavailable. Please try again.')); }, []);
+  useEffect(() => {
+    api.get('/dashboard')
+      .then(({ data }) => {
+        setDashboard(data);
+        setError('');
+      })
+      .catch((requestError) => {
+        // The Axios interceptor redirects authentication failures to login.
+        if (requestError.response?.status === 401) return;
+
+        const serverMessage = requestError.response?.data?.message;
+        setError(serverMessage || 'Dashboard data is temporarily unavailable. Please try again.');
+      });
+  }, []);
   const total = dashboard.pendingTasks + dashboard.completedTasks + dashboard.overdueTasks;
   const completion = total ? Math.round((dashboard.completedTasks / total) * 100) : 0;
   const allStats = [

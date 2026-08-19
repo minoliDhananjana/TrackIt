@@ -79,4 +79,21 @@ class SubmissionServiceWorkflowTests {
         assertEquals(Status.COMPLETED, task.getStatus());
         assertEquals(100, task.getProgress());
     }
+
+    @Test
+    void reviewedSubmissionCannotBeReviewedAgain() {
+        Submission submission = new Submission();
+        submission.setId("submission-1");
+        submission.setReviewStatus(SubmissionStatus.APPROVED);
+        when(submissionRepository.findById("submission-1")).thenReturn(Optional.of(submission));
+
+        IllegalArgumentException error = assertThrows(
+                IllegalArgumentException.class,
+                () -> submissionService.reviewSubmission("submission-1", "Changed", false)
+        );
+
+        assertEquals("This submission has already been reviewed", error.getMessage());
+        verify(submissionRepository, never()).save(any());
+        verify(taskRepository, never()).save(any());
+    }
 }

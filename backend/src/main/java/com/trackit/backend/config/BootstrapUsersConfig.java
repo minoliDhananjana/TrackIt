@@ -46,7 +46,7 @@ public class BootstrapUsersConfig implements ApplicationRunner {
         String password = required("TRACKIT_" + prefix + "_PASSWORD");
         String name = environment.getProperty("TRACKIT_" + prefix + "_NAME", role == Role.ADMIN ? "TrackIt Administrator" : "TrackIt Intern");
 
-        User user = userRepository.findByEmail(email).orElseGet(User::new);
+        User user = userRepository.findByEmailIgnoreCase(email).orElseGet(User::new);
         user.setFullName(name);
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));

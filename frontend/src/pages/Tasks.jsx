@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import api from "../api/axios";
 import Layout from "../components/Layout";
 
@@ -14,7 +14,10 @@ const emptyForm = {
 };
 
 export default function Tasks() {
-  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const currentUser = useMemo(
+    () => JSON.parse(localStorage.getItem("user") || "{}"),
+    [],
+  );
   const isAdmin = ["ADMIN", "SUPERVISOR"].includes(currentUser.role);
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -27,7 +30,9 @@ export default function Tasks() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError("");
     try {
       const [tasksResponse, projectsResponse, internsResponse] =
         await Promise.all([
@@ -44,11 +49,11 @@ export default function Tasks() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUser, isAdmin]);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    void loadData();
+  }, [loadData]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -81,7 +86,7 @@ export default function Tasks() {
 
       setFormData(emptyForm);
       setEditingId(null);
-      loadData();
+      await loadData();
     } catch (requestError) {
       setError(
         requestError.response?.data?.message ||
@@ -122,9 +127,9 @@ export default function Tasks() {
     try {
       await api.delete(`/tasks/${id}`);
       setMessage("Task deleted successfully");
-      loadData();
-    } catch {
-      setError("Unable to delete task");
+      await loadData();
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || "Unable to delete task");
     }
   };
 

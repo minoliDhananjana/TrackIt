@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import api from "../api/axios";
 import Layout from "../components/Layout";
 
@@ -12,7 +12,10 @@ const emptyForm = {
 };
 
 export default function Projects() {
-  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const currentUser = useMemo(
+    () => JSON.parse(localStorage.getItem("user") || "{}"),
+    [],
+  );
   const isAdmin = ["ADMIN", "SUPERVISOR"].includes(currentUser.role);
   const [projects, setProjects] = useState([]);
   const [interns, setInterns] = useState([]);
@@ -22,7 +25,9 @@ export default function Projects() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError("");
     try {
       const [projectsResponse, internsResponse] = await Promise.all([
         api.get("/projects"),
@@ -36,11 +41,11 @@ export default function Projects() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUser, isAdmin]);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    void loadData();
+  }, [loadData]);
 
   const handleChange = (event) => {
     setFormData({
@@ -72,7 +77,7 @@ export default function Projects() {
 
       setFormData(emptyForm);
       setEditingId(null);
-      loadData();
+      await loadData();
     } catch (requestError) {
       setError(
         requestError.response?.data?.message ||

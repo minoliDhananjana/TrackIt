@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import api from "../api/axios";
 import Layout from "../components/Layout";
 
@@ -13,7 +13,10 @@ const emptyForm = {
 };
 
 export default function WorkLogs() {
-  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const currentUser = useMemo(
+    () => JSON.parse(localStorage.getItem("user") || "{}"),
+    [],
+  );
   const isAdmin = ["ADMIN", "SUPERVISOR"].includes(currentUser.role);
   const [logs, setLogs] = useState([]);
   const [interns, setInterns] = useState([]);
@@ -23,7 +26,9 @@ export default function WorkLogs() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError("");
     try {
       const [logsResponse, internsResponse] = await Promise.all([
         api.get("/worklogs"),
@@ -37,12 +42,12 @@ export default function WorkLogs() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUser, isAdmin]);
 
   useEffect(() => {
-    loadData();
+    void loadData();
     if (!isAdmin) setFormData((current) => ({ ...current, internId: currentUser.userId }));
-  }, []);
+  }, [currentUser.userId, isAdmin, loadData]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -63,7 +68,7 @@ export default function WorkLogs() {
 
       setMessage("Work log submitted successfully");
       setFormData(isAdmin ? emptyForm : { ...emptyForm, internId: currentUser.userId });
-      loadData();
+      await loadData();
     } catch (requestError) {
       setError(
         requestError.response?.data?.message ||
@@ -84,9 +89,9 @@ export default function WorkLogs() {
         [logId]: "",
       });
 
-      loadData();
-    } catch {
-      setError("Unable to add feedback");
+      await loadData();
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || "Unable to add feedback");
     }
   };
 
